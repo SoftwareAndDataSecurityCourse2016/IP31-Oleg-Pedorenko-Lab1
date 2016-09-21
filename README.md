@@ -1,1 +1,2 @@
-# IP31-Oleg-Pedorenko-Lab1
+# kpi-fict-security
+Computer security labs for a university class.
