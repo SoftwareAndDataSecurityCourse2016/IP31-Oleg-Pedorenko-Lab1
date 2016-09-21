@@ -3,32 +3,47 @@ import pprint
 from operator import itemgetter
 import os
 import re
+import scorer
+from pycipher import SimpleSubstitution as SimpleSub
+import random
+import math
 
-def hack(text):
-    freq = {}
-    sample = [('E', 12.51), ('T', 9.25), ('A', 8.04), ('O', 7.60), ('I', 7.26), ('N', 7.09), ('S', 6.54), ('R', 6.12), ('H', 5.49), ('L', 4.14), ('D', 3.99), ('C', 3.06), ('U', 2.71), ('M', 2.53), ('F', 2.30), ('P', 2.00), ('G', 1.96), ('W', 1.92), ('Y', 1.73), ('B', 1.54), ('V', 0.99), ('K', 0.67), ('X', 0.19), ('J', 0.16), ('Q', 0.11), ('Z', 0.09)]
-    regex = re.compile('[^a-zA-Z]')
-    su = text.upper()
-    su = regex.sub('', su)
-    a = string.uppercase
-    l = len(su)
-    for c in a:
-        freq[c] = round((su.count(c) + 0.0)/l * 100,3)
-    freq = sorted(freq.items(), key=itemgetter(1), reverse = True)
-    blah = sorted(zip(sample, freq), key = lambda x: x[0][0])    
-    x = {}
-    for a in blah:
-        x[a[1][0]] = a[0][0]
-        x[a[1][0].lower()] = a[0][0].lower()
-    return x
+def hack(ctext):
+    fitness = scorer.scorer('quads.txt')
+    maxkey = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    maxscore = -99999999999
+    parentscore,parentkey = maxscore,maxkey[:]
+    i = 0
+    delta = 0.1
+    while i < 1000:
+        i = i+1
+        random.shuffle(parentkey)
+        deciphered = SimpleSub(parentkey).decipher(ctext)
+        parentscore = fitness.score(deciphered)
+        count = 0
+        while count < 1000:
+            a = random.randint(0,25)
+            b = random.randint(0,25)
+            child = parentkey[:]
+            # swap two characters in the child
+            child[a],child[b] = child[b],child[a]
+            deciphered = SimpleSub(child).decipher(ctext)
+            score = fitness.score(deciphered)
+            # if the child was better, replace the parent with it
+            if score > parentscore:
+                parentscore = score
+                parentkey = child[:]
+                count = 0
+            count = count+1
+        # keep track of best score seen so far
+        if parentscore>maxscore:
+            maxscore,maxkey = parentscore,parentkey[:]
+        if math.fabs(parentscore-maxscore) <= delta:
+            break;
+    return maxkey
     
 def translate(text, key):
-    res = ''
-    for c in text:
-        if c in key.keys():
-            c = key[c]
-        res += c
-    return res
+    return SimpleSub(key).decipher(text)
     
 def swapkey(c1, c2):
     k = {}
